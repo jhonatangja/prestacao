@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prestação RIO VERDE - AF Logística</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --primary: #1e40af;
+            --primary-hover: #1e3a8a;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+
+        body { background-color: var(--bg-body); color: var(--text-main); padding: 16px; font-size: 14px; }
+
+        .container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+        .header { text-align: center; border-bottom: 2px dashed var(--border); padding-bottom: 12px; }
+        .header h1 { font-size: 18px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;}
+        .header p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+
+        .card { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+        /* Upload */
+        .upload-section { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+        .upload-btn { background: var(--primary); color: white; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-weight: 600; border: none; transition: 0.2s; width: 100%; max-width: 300px; }
+        .upload-btn:hover { background: var(--primary-hover); }
+        input[type="file"] { display: none; }
+        
+        #status-message { font-size: 13px; font-weight: 600; }
+
+        /* Ranking */
+        .ranking-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;}
+        .ranking-list { display: flex; flex-direction: column; gap: 6px; }
+        .ranking-item { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; }
+        .ranking-item:hover, .ranking-item.active { border-color: var(--primary); background: #eff6ff; color: var(--primary); }
+        .ranking-item .count { background: var(--border); padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: auto; color: var(--text-main); }
+        .ranking-item.active .count { background: var(--primary); color: white; }
+
+        /* Summary Stats */
+        .summary-flex { display: flex; flex-wrap: wrap; gap: 12px; font-weight: 600; font-size: 13px; justify-content: center;}
+        .stat-badge { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border); }
+        .stat-voltar { color: var(--primary); background: #eff6ff; border-color: #bfdbfe; }
+        .stat-devolver { color: var(--danger); background: var(--danger-bg); border-color: #fca5a5; }
+        .stat-sem { color: var(--warning); background: var(--warning-bg); border-color: #fcd34d; }
+
+        /* Controls */
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+        select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); outline: none; flex: 1; min-width: 200px; font-weight: 500;}
+        .btn-outline { border: 1px solid var(--text-main); color: var(--text-main); background: transparent; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 6px;}
+        .btn-outline:hover { background: var(--text-main); color: white; }
+
+        /* Package List */
+        .pkg-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+        .pkg-item { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); transition: 0.2s; }
+        
+        /* Destaque visual forte para Ausentes e Sem Problemática */
+        .pkg-item.attention { border: 2px solid var(--warning); background: #fffdf5; box-shadow: 0 0 8px rgba(245, 158, 11, 0.15); }
+        
+        .pkg-item.conferido { border-color: var(--success) !important; background: var(--success-bg) !important; box-shadow: none !important;}
+        
+        @media (min-width: 600px) {
+            .pkg-item { flex-direction: row; justify-content: space-between; align-items: center; }
+        }
+
+        .pkg-info { display: flex; flex-direction: column; gap: 4px; }
+        .pkg-id { font-family: monospace; font-size: 15px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;}
+        
+        /* Tag para cidade errada */
+        .wrong-city { font-size: 10px; color: white; background: var(--danger); padding: 2px 6px; border-radius: 4px; font-weight: bold; font-family: 'Inter', sans-serif;}
+
+        .pkg-driver { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+        .pkg-customer { font-size: 14px; font-weight: 600; }
+        .pkg-address { font-size: 12px; color: var(--text-muted); line-height: 1.3; }
+        
+        .pkg-reason { font-size: 12px; color: var(--danger); background: var(--danger-bg); padding: 6px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; border: 1px solid #fca5a5; font-weight: 500;}
+        .pkg-item.conferido .pkg-reason { opacity: 0.7; }
+
+        .pkg-actions { display: flex; align-items: center; gap: 10px; justify-content: space-between; margin-top: 4px;}
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;}
+        .badge.voltar { background: #eff6ff; color: var(--primary); }
+        .badge.devolver { background: var(--danger-bg); color: var(--danger); }
+        .badge.sem { background: var(--warning-bg); color: var(--warning); }
+        
+        .btn-check { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-body); cursor: pointer; font-weight: 600; transition: 0.2s; white-space: nowrap;}
+        .btn-check:hover { background: #e2e8f0; }
+        .pkg-item.conferido .btn-check { background: var(--success); color: white; border-color: var(--success); }
+
+        /* Bottom Actions */
+        .bottom-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .btn-primary { background: var(--primary); color: white; flex: 1; text-align: center; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; border: none; font-size: 14px; }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        #app-content { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>AF Logística</h1>
+        <p id="date-display">📊 Prestação de Contas - Rio Verde</p>
+    </div>
+
+    <div class="card upload-section">
+        <label class="upload-btn">
+            [Upload Excel]
+            <input type="file" id="file-input" accept=".xlsx, .xls, .csv">
+        </label>
+        <div id="status-message">Aguardando planilha...</div>
+    </div>
+
+    <div id="app-content">
+        <div class="card">
+            <div class="ranking-title">
+                <span id="ranking-header">📈 RANKING MOTORISTAS</span>
+            </div>
+            <div class="ranking-list" id="ranking-grid">
+                </div>
+        </div>
+
+        <div class="card summary-flex" id="summary-stats">
+            </div>
+
+        <div class="card controls">
+            <select id="driver-filter">
+                <option value="TODOS">👨‍💼 Motorista: [TODOS]</option>
+            </select>
+            <button class="btn-outline" id="btn-copy-jms">🔢 Copiar CÓDIGOS JMS</button>
+        </div>
+
+        <div class="pkg-list" id="package-list">
+            </div>
+
+        <div class="bottom-actions">
+            <button class="btn-primary" id="btn-copy-full">📋 Copiar Prestação Completa</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configurações e Estado
+    let allPackages = [];
+    let selectedDriver = 'TODOS';
+    let rankingExpanded = false;
+
+    // Define data atual
+    document.getElementById('date-display').textContent = `📊 Prestação de Contas - Rio Verde - ${new Date().toLocaleDateString('pt-BR')}`;
+
+    function categorize(reason) {
+        if (!reason) return { type: 'sem', label: '⚠️ SEM problemática', id: 'sem' };
+        
+        const text = reason.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const originalText = reason.toLowerCase();
+        
+        if (text.includes('ausencia') || originalText.includes('客户不在')) {
+            return { type: 'voltar', label: '🔄 Voltar rota (< 3 tentativas)', id: 'voltar' };
+        }
+        if (text.includes('endereco incorreto') || text.includes('endereco.incorreto') || originalText.includes('地址信息错误')) {
+            return { type: 'devolver', label: '📥 Receber na base', id: 'devolver' };
+        }
+        if (text.includes('impossibilidade') || originalText.includes('无法进入')) {
+            // ATUALIZADO AQUI
+            return { type: 'devolver', label: '📥 Receber na base (verificar rota)', id: 'devolver' };
+        }
+        if (text.includes('recusa') || originalText.includes('拒收')) {
+            return { type: 'devolver', label: '📥 Receber base (pedir devolução)', id: 'devolver' };
+        }
+        if (text.includes('encomenda expedida') || originalText.includes('未到件')) {
+            return { type: 'sem', label: '⚠️ Sem problemática (Motivo?)', id: 'sem' };
+        }
+
+        return { type: 'sem', label: '⚠️ SEM problemática', id: 'sem' };
+    }
+
+    // Leitura do Excel
+    document.getElementById('file-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const data = event.target.result;
+            const workbook = XLSX.read(data, { type: 'binary' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { raw: false });
+
+            processRows(rows);
+        };
+        reader.readAsBinaryString(file);
+    });
+
+    function processRows(rows) {
+        allPackages = [];
+        const normalizedRows = [];
+        const validDrivers = new Set(); 
+        
+        // PASSO 1: Normalizar chaves e descobrir quem são os motoristas de Rio Verde
+        rows.forEach(row => {
+            const normRow = {};
+            for (let key in row) {
+                normRow[key.trim().toLowerCase()] = row[key];
+            }
+            normalizedRows.push(normRow);
+
+            const city = (normRow['cidade destino'] || '').toString().trim().toLowerCase();
+            const signature = (normRow['marca de assinatura'] || '').toString().trim().toUpperCase();
+            const rawDriver = (normRow['responsável pela entrega'] || 'SEM MOTORISTA').toString().trim().toUpperCase();
+
+            if (city.includes('rio verde') && (signature.includes('NÃO ENTREGUE') || signature.includes('NAO ENTREGUE'))) {
+                validDrivers.add(rawDriver);
+            }
+        });
+
+        // PASSO 2: Pegar TODOS os pacotes (NÃO ENTREGUES) dos motoristas encontrados no Passo 1
+        normalizedRows.forEach(normRow => {
+            const rawDriver = (normRow['responsável pela entrega'] || 'SEM MOTORISTA').toString().trim().toUpperCase();
+            const signature = (normRow['marca de assinatura'] || '').toString().trim().toUpperCase();
+
+            if (validDrivers.has(rawDriver) && (signature.includes('NÃO ENTREGUE') || signature.includes('NAO ENTREGUE'))) {
+                
+                const rawId = (normRow['número de pedido jms'] || '').toString().replace(/\D/g, ''); 
+                if (!rawId) return; 
+                
+                const rawCity = (normRow['cidade destino'] || '').toString().trim().toUpperCase();
+                const rawReason = (normRow['motivos dos pacotes problemáticos'] || '').toString().trim();
+                const rawCustomer = (normRow['destinatário'] || '').toString().trim();
+                const rawAddress = (normRow['complemento'] || '').toString().trim();
+
+                allPackages.push({
+                    id: rawId,
+                    driver: rawDriver,
+                    customer: rawCustomer,
+                    address: rawAddress,
+                    city: rawCity, 
+                    reason: rawReason,
+                    category: categorize(rawReason),
+                    conferido: localStorage.getItem(`rv_check_${rawId}`) === 'true'
+                });
+            }
+        });
+
+        if (allPackages.length === 0) {
+            document.getElementById('status-message').innerHTML = '❌ Nenhum pacote de motoristas de Rio Verde encontrado.';
+            document.getElementById('status-message').style.color = 'var(--danger)';
+            return;
+        }
+
+        document.getElementById('status-message').innerHTML = `✅ ${allPackages.length} pacotes carregados (incluindo outras cidades dos mesmos motoristas)!`;
+        document.getElementById('status-message').style.color = 'var(--success)';
+        document.getElementById('app-content').style.display = 'block';
+
+        rankingExpanded = false; 
+        updateUI();
+        populateDropdown();
+    }
+
+    function updateUI() {
+        renderRanking();
+        renderSummary();
+        renderList();
+    }
+
+    function renderRanking() {
+        const pendentes = allPackages.filter(p => !p.conferido);
+        const driverCounts = {};
+        
+        pendentes.forEach(p => {
+            driverCounts[p.driver] = (driverCounts[p.driver] || 0) + 1;
+        });
+
+        const sortedDrivers = Object.keys(driverCounts)
+            .map(d => ({ name: d, count: driverCounts[d] }))
+            .sort((a, b) => b.count - a.count);
+
+        document.getElementById('ranking-header').textContent = `📈 RANKING MOTORISTAS (${pendentes.length} pendentes)`;
+
+        const grid = document.getElementById('ranking-grid');
+        grid.innerHTML = '';
+
+        const maxToShow = rankingExpanded ? sortedDrivers.length : 10;
+        const toShow = sortedDrivers.slice(0, maxToShow);
+
+        toShow.forEach((d, index) => {
+            const div = document.createElement('div');
+            div.className = `ranking-item ${selectedDriver === d.name ? 'active' : ''}`;
+            
+            let rankIcon = `${index + 1}.`;
+            if (index === 0) rankIcon = '🥇';
+            if (index === 1) rankIcon = '🥈';
+            if (index === 2) rankIcon = '🥉';
+
+            div.innerHTML = `
+                <span style="width: 24px; text-align: center; font-size: 15px;">${rankIcon}</span>
+                <span style="margin-left: 8px;">${d.name}</span>
+                <span class="count">${d.count} pc</span>
+            `;
+            
+            div.onclick = () => {
+                document.getElementById('driver-filter').value = d.name;
+                selectedDriver = d.name;
+                updateUI();
+            };
+            grid.appendChild(div);
+        });
+
+        if (sortedDrivers.length > 10) {
+            const toggleBtn = document.createElement('div');
+            toggleBtn.className = 'ranking-item';
+            toggleBtn.style.justifyContent = 'center';
+            toggleBtn.style.background = '#f1f5f9';
+            toggleBtn.style.color = 'var(--primary)';
+            
+            if (rankingExpanded) {
+                toggleBtn.innerHTML = `[OCULTAR ▲]`;
+            } else {
+                const hiddenCount = sortedDrivers.length - 10;
+                toggleBtn.innerHTML = `[VER TODOS (+${hiddenCount}) ▼]`;
+            }
+            
+            toggleBtn.onclick = () => {
+                rankingExpanded = !rankingExpanded;
+                renderRanking(); 
+            };
+            
+            grid.appendChild(toggleBtn);
+        }
+    }
+
+    function populateDropdown() {
+        const select = document.getElementById('driver-filter');
+        select.innerHTML = `<option value="TODOS">👨‍💼 Motorista: [TODOS] (${allPackages.length})</option>`;
+        
+        const drivers = [...new Set(allPackages.map(p => p.driver))].sort();
+        drivers.forEach(d => {
+            const count = allPackages.filter(p => p.driver === d).length;
+            select.innerHTML += `<option value="${d}">👨‍💼 ${d} (${count})</option>`;
+        });
+
+        select.addEventListener('change', (e) => {
+            selectedDriver = e.target.value;
+            updateUI();
+        });
+    }
+
+    function renderSummary() {
+        const view = selectedDriver === 'TODOS' ? allPackages : allPackages.filter(p => p.driver === selectedDriver);
+        let vol = 0, dev = 0, sem = 0;
+
+        view.forEach(p => {
+            if (p.category.id === 'voltar') vol++;
+            if (p.category.id === 'devolver') dev++;
+            if (p.category.id === 'sem') sem++;
+        });
+
+        document.getElementById('summary-stats').innerHTML = `
+            <div class="stat-badge">Total: ${view.length}</div>
+            <div class="stat-badge stat-voltar">🔄 Voltar: ${vol}</div>
+            <div class="stat-badge stat-devolver">📥 Receber Base: ${dev}</div>
+            <div class="stat-badge stat-sem">⚠️ Sem Problem.: ${sem}</div>
+        `;
+    }
+
+    function renderList() {
+        const view = selectedDriver === 'TODOS' ? allPackages : allPackages.filter(p => p.driver === selectedDriver);
+        const list = document.getElementById('package-list');
+        list.innerHTML = '';
+
+        view.forEach(p => {
+            const div = document.createElement('div');
+            
+            const needsAttention = (p.category.id === 'sem' || p.category.id === 'voltar');
+            div.className = `pkg-item ${p.conferido ? 'conferido' : ''} ${needsAttention ? 'attention' : ''}`;
+            div.id = `pkg-${p.id}`;
+            
+            const isWrongCity = !p.city.toLowerCase().includes('rio verde');
+
+            div.innerHTML = `
+                <div class="pkg-info">
+                    <span class="pkg-id">
+                        ${p.id}
+                        ${isWrongCity ? `<span class="wrong-city">🚨 ${p.city}</span>` : ''}
+                    </span>
+                    <span class="pkg-customer">${p.customer}</span>
+                    ${p.address ? `<span class="pkg-address">📍 ${p.address}</span>` : ''}
+                    
+                    ${p.reason 
+                        ? `<div class="pkg-reason">🛑 <b>Problema:</b> ${p.reason}</div>` 
+                        : `<div class="pkg-reason" style="background:var(--warning-bg); border-color:#fcd34d; color:var(--warning);">⚠️ Motivo não especificado</div>`}
+                    
+                    ${selectedDriver === 'TODOS' ? `<span class="pkg-driver" style="margin-top: 4px;">👨‍💼 ${p.driver}</span>` : ''}
+                </div>
+                <div class="pkg-actions">
+                    <span class="badge ${p.category.id}">${p.category.label}</span>
+                    <button class="btn-check" onclick="toggleConferido('${p.id}')">
+                        ${p.conferido ? '✅ Conferido' : 'Conferir'}
+                    </button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    window.toggleConferido = function(id) {
+        const pkg = allPackages.find(p => p.id === id);
+        if (!pkg) return;
+
+        pkg.conferido = !pkg.conferido;
+        if (pkg.conferido) {
+            localStorage.setItem(`rv_check_${id}`, 'true');
+        } else {
+            localStorage.removeItem(`rv_check_${id}`);
+        }
+        
+        const itemEl = document.getElementById(`pkg-${id}`);
+        const btn = itemEl.querySelector('.btn-check');
+        
+        if (pkg.conferido) {
+            itemEl.classList.add('conferido');
+            btn.innerHTML = '✅ Conferido';
+        } else {
+            itemEl.classList.remove('conferido');
+            btn.innerHTML = 'Conferir';
+        }
+
+        renderRanking();
+    }
+
+    document.getElementById('btn-copy-jms').addEventListener('click', () => {
+        const view = selectedDriver === 'TODOS' ? allPackages : allPackages.filter(p => p.driver === selectedDriver);
+        const ids = view.map(p => p.id).join(',');
+        
+        navigator.clipboard.writeText(ids).then(() => {
+            const btn = document.getElementById('btn-copy-jms');
+            const original = btn.innerHTML;
+            btn.innerHTML = '✅ Copiado!';
+            setTimeout(() => btn.innerHTML = original, 2000);
+        });
+    });
+
+    document.getElementById('btn-copy-full').addEventListener('click', () => {
+        const dateStr = new Date().toLocaleDateString('pt-BR');
+        let text = `🔛 PRESTAÇÃO RIO VERDE ${dateStr}\n`;
+        
+        const driverName = selectedDriver === 'TODOS' ? 'TODOS OS MOTORISTAS' : selectedDriver;
+        const view = selectedDriver === 'TODOS' ? allPackages : allPackages.filter(p => p.driver === selectedDriver);
+        
+        text += `Motorista: ${driverName} (${view.length} pacotes)\n\n`;
+
+        const groups = {
+            voltar: { title: '🔄 CONFERIR TENTATIVAS / VOLTAR NA ROTA', pkgs: [] },
+            sem: { title: '⚠️ SEM PROBLEMÁTICA / VERIFICAR MOTIVO', pkgs: [] },
+            devolver: { title: '📥 RECEBER NA BASE', pkgs: [] }
+        };
+
+        view.forEach(p => groups[p.category.id].pkgs.push(p));
+
+        ['voltar', 'sem', 'devolver'].forEach(key => {
+            const group = groups[key];
+            if (group.pkgs.length > 0) {
+                text += `${group.title} (${group.pkgs.length}):\n`;
+                group.pkgs.forEach(p => {
+                    const addrStr = p.address ? ` - ${p.address}` : '';
+                    const reasonStr = p.reason ? `\n   ↳ Motivo: ${p.reason}` : '';
+                    const cityAlert = !p.city.toLowerCase().includes('rio verde') ? ` 🚨 [ERRADO: ${p.city}]` : '';
+                    
+                    text += `${p.id} - ${p.customer}${cityAlert}${addrStr}${reasonStr}\n`;
+                });
+                text += `\n`;
+            }
+        });
+
+        navigator.clipboard.writeText(text.trim()).then(() => {
+            const btn = document.getElementById('btn-copy-full');
+            const original = btn.innerHTML;
+            btn.innerHTML = '✅ Prestação Copiada com Sucesso!';
+            btn.style.background = 'var(--success)';
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.style.background = 'var(--primary)';
+            }, 3000);
+        });
+    });
+
+</script>
+</body>
+</html>
