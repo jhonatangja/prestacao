@@ -22,6 +22,10 @@
             --warning-bg: #fffbeb;
             --danger: #ef4444;
             --danger-bg: #fef2f2;
+            --attention-border: #f97316; /* Laranja forte */
+            --attention-bg: #fff7ed;
+            --gray-btn: #64748b;
+            --gray-btn-hover: #475569;
             --radius: 12px;
         }
 
@@ -39,11 +43,15 @@
 
         /* Upload */
         .upload-section { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
-        .upload-btn { background: var(--primary); color: white; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-weight: 600; border: none; transition: 0.2s; width: 100%; max-width: 300px; }
+        .upload-row { display: flex; gap: 10px; width: 100%; justify-content: center; flex-wrap: wrap;}
+        .upload-btn { background: var(--primary); color: white; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-weight: 600; border: none; transition: 0.2s; flex: 1; min-width: 250px; max-width: 350px;}
         .upload-btn:hover { background: var(--primary-hover); }
+        .upload-btn.secondary { background: var(--gray-btn); }
+        .upload-btn.secondary:hover { background: var(--gray-btn-hover); }
         input[type="file"] { display: none; }
         
         #status-message { font-size: 13px; font-weight: 600; }
+        #status-devolvidos { font-size: 12px; font-weight: 600; color: var(--text-muted); }
 
         /* Ranking */
         .ranking-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;}
@@ -62,7 +70,8 @@
 
         /* Controls */
         .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
-        select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); outline: none; flex: 1; min-width: 200px; font-weight: 500;}
+        .filters-group { display: flex; gap: 10px; flex: 1; flex-wrap: wrap; }
+        select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); outline: none; flex: 1; min-width: 140px; font-weight: 500;}
         .btn-outline { border: 1px solid var(--text-main); color: var(--text-main); background: transparent; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 6px;}
         .btn-outline:hover { background: var(--text-main); color: white; }
 
@@ -70,10 +79,9 @@
         .pkg-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
         .pkg-item { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); transition: 0.2s; }
         
-        /* Destaque visual forte para Ausentes e Sem Problemática */
-        .pkg-item.attention { border: 2px solid var(--warning); background: #fffdf5; box-shadow: 0 0 8px rgba(245, 158, 11, 0.15); }
-        
+        .pkg-item.highlight-sem { border: 2px solid var(--attention-border); background: var(--attention-bg); box-shadow: 0 0 10px rgba(249, 115, 22, 0.15); }
         .pkg-item.conferido { border-color: var(--success) !important; background: var(--success-bg) !important; box-shadow: none !important;}
+        .pkg-item.devolvido { border-color: var(--text-muted) !important; background: #f1f5f9 !important; opacity: 0.8;}
         
         @media (min-width: 600px) {
             .pkg-item { flex-direction: row; justify-content: space-between; align-items: center; }
@@ -82,7 +90,6 @@
         .pkg-info { display: flex; flex-direction: column; gap: 4px; }
         .pkg-id { font-family: monospace; font-size: 15px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;}
         
-        /* Tag para cidade errada */
         .wrong-city { font-size: 10px; color: white; background: var(--danger); padding: 2px 6px; border-radius: 4px; font-weight: bold; font-family: 'Inter', sans-serif;}
 
         .pkg-driver { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
@@ -96,7 +103,8 @@
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;}
         .badge.voltar { background: #eff6ff; color: var(--primary); }
         .badge.devolver { background: var(--danger-bg); color: var(--danger); }
-        .badge.sem { background: var(--warning-bg); color: var(--warning); }
+        .badge.sem { background: var(--warning-bg); color: var(--warning); border: 1px solid #fcd34d;}
+        .badge.is-devolvido { background: var(--text-muted); color: white; }
         
         .btn-check { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-body); cursor: pointer; font-weight: 600; transition: 0.2s; white-space: nowrap;}
         .btn-check:hover { background: #e2e8f0; }
@@ -108,6 +116,8 @@
         .btn-primary:hover { background: var(--primary-hover); }
 
         #app-content { display: none; }
+        
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-weight: 500; }
     </style>
 </head>
 <body>
@@ -119,11 +129,18 @@
     </div>
 
     <div class="card upload-section">
-        <label class="upload-btn">
-            [Upload Excel]
-            <input type="file" id="file-input" accept=".xlsx, .xls, .csv">
-        </label>
-        <div id="status-message">Aguardando planilha...</div>
+        <div class="upload-row">
+            <label class="upload-btn">
+                1️⃣ [Planilha Principal]
+                <input type="file" id="file-input" accept=".xlsx, .xls, .csv">
+            </label>
+            <label class="upload-btn secondary">
+                2️⃣ [Devolvidos (Opcional)]
+                <input type="file" id="file-devolvidos" accept=".xlsx, .xls, .csv">
+            </label>
+        </div>
+        <div id="status-message">Aguardando planilha principal...</div>
+        <div id="status-devolvidos"></div>
     </div>
 
     <div id="app-content">
@@ -139,9 +156,17 @@
             </div>
 
         <div class="card controls">
-            <select id="driver-filter">
-                <option value="TODOS">👨‍💼 Motorista: [TODOS]</option>
-            </select>
+            <div class="filters-group">
+                <select id="driver-filter">
+                    <option value="TODOS">👨‍💼 Motorista: [TODOS]</option>
+                </select>
+                <select id="status-filter">
+                    <option value="PENDENTES">⏳ Apenas Pendentes</option>
+                    <option value="CONFERIDAS">✅ Apenas Conferidas</option>
+                    <option value="DEVOLVIDAS">📦 Já Devolvidas na Base</option>
+                    <option value="TODAS">📋 Todas as Peças</option>
+                </select>
+            </div>
             <button class="btn-outline" id="btn-copy-jms">🔢 Copiar CÓDIGOS JMS</button>
         </div>
 
@@ -155,41 +180,97 @@
 </div>
 
 <script>
-    // Configurações e Estado
     let allPackages = [];
+    let devolvidosSet = new Set(); // Conjunto para armazenar IDs já devolvidos
     let selectedDriver = 'TODOS';
+    let statusFilter = 'PENDENTES';
     let rankingExpanded = false;
 
-    // Define data atual
     document.getElementById('date-display').textContent = `📊 Prestação de Contas - Rio Verde - ${new Date().toLocaleDateString('pt-BR')}`;
 
+    // Lógica 100% à prova de falhas para Categorização
     function categorize(reason) {
         if (!reason) return { type: 'sem', label: '⚠️ SEM problemática', id: 'sem' };
         
-        const text = reason.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const originalText = reason.toLowerCase();
+        // Converte pra minúsculo e remove acentos
+        const textNormal = reason.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        // Remove absolutamente TODOS os pontos, espaços, traços (ex: Endereço.incorreto -> enderecoincorreto)
+        const textClean = textNormal.replace(/[^a-z0-9]/g, '');
+        // Mantém o original para testar os símbolos chineses
+        const orig = reason.toLowerCase();
         
-        if (text.includes('ausencia') || originalText.includes('客户不在')) {
+        if (textClean.includes('ausencia') || orig.includes('客户不在')) {
             return { type: 'voltar', label: '🔄 Voltar rota (< 3 tentativas)', id: 'voltar' };
         }
-        if (text.includes('endereco incorreto') || text.includes('endereco.incorreto') || originalText.includes('地址信息错误')) {
+        if (textClean.includes('enderecoincorreto') || orig.includes('地址信息错误')) {
             return { type: 'devolver', label: '📥 Receber na base', id: 'devolver' };
         }
-        if (text.includes('impossibilidade') || originalText.includes('无法进入')) {
-            // ATUALIZADO AQUI
+        if (textClean.includes('mudoudeendereco') || orig.includes('收件人搬家')) {
+            return { type: 'devolver', label: '📥 Receber base (Mudou)', id: 'devolver' };
+        }
+        if (textClean.includes('impossibilidade') || orig.includes('无法进入')) {
             return { type: 'devolver', label: '📥 Receber na base (verificar rota)', id: 'devolver' };
         }
-        if (text.includes('recusa') || originalText.includes('拒收')) {
+        if (textClean.includes('recusa') || orig.includes('拒收')) {
             return { type: 'devolver', label: '📥 Receber base (pedir devolução)', id: 'devolver' };
         }
-        if (text.includes('encomenda expedida') || originalText.includes('未到件')) {
+        if (textClean.includes('encomendaexpedida') || orig.includes('未到件')) {
             return { type: 'sem', label: '⚠️ Sem problemática (Motivo?)', id: 'sem' };
         }
 
         return { type: 'sem', label: '⚠️ SEM problemática', id: 'sem' };
     }
 
-    // Leitura do Excel
+    document.getElementById('status-filter').addEventListener('change', (e) => {
+        statusFilter = e.target.value;
+        updateUI();
+    });
+
+    // --------------------------------------------------------
+    // LEITURA DO SEGUNDO ARQUIVO: DEVOLVIDOS NA BASE
+    // --------------------------------------------------------
+    document.getElementById('file-devolvidos').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const data = event.target.result;
+            const workbook = XLSX.read(data, { type: 'binary' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            
+            // Lendo como matriz (arrays de arrays) para focar na Coluna A
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            
+            let count = 0;
+            rows.forEach(row => {
+                // Acessa o primeiro item da linha (Coluna A)
+                if (row[0]) {
+                    // Extrai apenas os números da célula
+                    const idExtract = String(row[0]).replace(/\D/g, '');
+                    // Se tiver um tamanho razoável de ID (ex: 15 dígitos da JMS)
+                    if (idExtract.length >= 10) {
+                        devolvidosSet.add(idExtract);
+                        count++;
+                    }
+                }
+            });
+
+            document.getElementById('status-devolvidos').innerHTML = `📦 Planilha Opcional Lida: ${count} peças devolvidas processadas.`;
+            document.getElementById('status-devolvidos').style.color = 'var(--primary)';
+            
+            // Se a planilha principal já foi carregada, atualizamos os pacotes com essa nova informação
+            if(allPackages.length > 0) {
+                allPackages.forEach(p => p.isDevolvido = devolvidosSet.has(p.id));
+                updateUI();
+            }
+        };
+        reader.readAsBinaryString(file);
+    });
+
+    // --------------------------------------------------------
+    // LEITURA DO PRIMEIRO ARQUIVO: PLANILHA PRINCIPAL
+    // --------------------------------------------------------
     document.getElementById('file-input').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -211,7 +292,6 @@
         const normalizedRows = [];
         const validDrivers = new Set(); 
         
-        // PASSO 1: Normalizar chaves e descobrir quem são os motoristas de Rio Verde
         rows.forEach(row => {
             const normRow = {};
             for (let key in row) {
@@ -228,7 +308,6 @@
             }
         });
 
-        // PASSO 2: Pegar TODOS os pacotes (NÃO ENTREGUES) dos motoristas encontrados no Passo 1
         normalizedRows.forEach(normRow => {
             const rawDriver = (normRow['responsável pela entrega'] || 'SEM MOTORISTA').toString().trim().toUpperCase();
             const signature = (normRow['marca de assinatura'] || '').toString().trim().toUpperCase();
@@ -251,34 +330,58 @@
                     city: rawCity, 
                     reason: rawReason,
                     category: categorize(rawReason),
-                    conferido: localStorage.getItem(`rv_check_${rawId}`) === 'true'
+                    conferido: localStorage.getItem(`rv_check_${rawId}`) === 'true',
+                    isDevolvido: devolvidosSet.has(rawId) // Já marca se tiver subido a planilha 2 antes
                 });
             }
         });
 
         if (allPackages.length === 0) {
-            document.getElementById('status-message').innerHTML = '❌ Nenhum pacote de motoristas de Rio Verde encontrado.';
+            document.getElementById('status-message').innerHTML = '❌ Nenhum pacote encontrado.';
             document.getElementById('status-message').style.color = 'var(--danger)';
             return;
         }
 
-        document.getElementById('status-message').innerHTML = `✅ ${allPackages.length} pacotes carregados (incluindo outras cidades dos mesmos motoristas)!`;
+        document.getElementById('status-message').innerHTML = `✅ Planilha Principal Carregada!`;
         document.getElementById('status-message').style.color = 'var(--success)';
         document.getElementById('app-content').style.display = 'block';
 
         rankingExpanded = false; 
         updateUI();
-        populateDropdown();
+    }
+
+    // Retorna a lista de pacotes filtrados por STATUS e MOTORISTA
+    function getFilteredPackages() {
+        let view = allPackages;
+        
+        if (selectedDriver !== 'TODOS') {
+            view = view.filter(p => p.driver === selectedDriver);
+        }
+        
+        // Aplica o filtro de estado superior
+        if (statusFilter === 'PENDENTES') {
+            // Se está pendente: Não foi conferido no sistema E Não consta na planilha de devolvidos
+            view = view.filter(p => !p.conferido && !p.isDevolvido);
+        } else if (statusFilter === 'CONFERIDAS') {
+            view = view.filter(p => p.conferido && !p.isDevolvido);
+        } else if (statusFilter === 'DEVOLVIDAS') {
+            view = view.filter(p => p.isDevolvido);
+        }
+        // Se for "TODAS", não aplica filtro de estado extra.
+        
+        return view;
     }
 
     function updateUI() {
+        populateDropdown(); 
         renderRanking();
         renderSummary();
         renderList();
     }
 
     function renderRanking() {
-        const pendentes = allPackages.filter(p => !p.conferido);
+        // O RANKING conta ESTRITAMENTE as Pendências reais
+        const pendentes = allPackages.filter(p => !p.conferido && !p.isDevolvido);
         const driverCounts = {};
         
         pendentes.forEach(p => {
@@ -293,6 +396,11 @@
 
         const grid = document.getElementById('ranking-grid');
         grid.innerHTML = '';
+        
+        if (sortedDrivers.length === 0) {
+            grid.innerHTML = `<div style="text-align:center; padding: 10px; color: var(--success); font-weight: bold;">🎉 Nenhuma pendência encontrada!</div>`;
+            return;
+        }
 
         const maxToShow = rankingExpanded ? sortedDrivers.length : 10;
         const toShow = sortedDrivers.slice(0, maxToShow);
@@ -315,6 +423,8 @@
             div.onclick = () => {
                 document.getElementById('driver-filter').value = d.name;
                 selectedDriver = d.name;
+                statusFilter = 'PENDENTES';
+                document.getElementById('status-filter').value = 'PENDENTES';
                 updateUI();
             };
             grid.appendChild(div);
@@ -327,12 +437,7 @@
             toggleBtn.style.background = '#f1f5f9';
             toggleBtn.style.color = 'var(--primary)';
             
-            if (rankingExpanded) {
-                toggleBtn.innerHTML = `[OCULTAR ▲]`;
-            } else {
-                const hiddenCount = sortedDrivers.length - 10;
-                toggleBtn.innerHTML = `[VER TODOS (+${hiddenCount}) ▼]`;
-            }
+            toggleBtn.innerHTML = rankingExpanded ? `[OCULTAR ▲]` : `[VER TODOS (+${sortedDrivers.length - 10}) ▼]`;
             
             toggleBtn.onclick = () => {
                 rankingExpanded = !rankingExpanded;
@@ -345,22 +450,32 @@
 
     function populateDropdown() {
         const select = document.getElementById('driver-filter');
-        select.innerHTML = `<option value="TODOS">👨‍💼 Motorista: [TODOS] (${allPackages.length})</option>`;
+        const filteredPackages = getFilteredPackages();
         
-        const drivers = [...new Set(allPackages.map(p => p.driver))].sort();
+        const drivers = [...new Set(filteredPackages.map(p => p.driver))].sort();
+        
+        select.innerHTML = `<option value="TODOS">👨‍💼 Motorista: [TODOS] (${filteredPackages.length})</option>`;
+        
         drivers.forEach(d => {
-            const count = allPackages.filter(p => p.driver === d).length;
+            const count = filteredPackages.filter(p => p.driver === d).length;
             select.innerHTML += `<option value="${d}">👨‍💼 ${d} (${count})</option>`;
         });
 
-        select.addEventListener('change', (e) => {
+        if (selectedDriver !== 'TODOS' && !drivers.includes(selectedDriver)) {
+            selectedDriver = 'TODOS';
+        } else {
+            select.value = selectedDriver;
+        }
+
+        select.onchange = (e) => {
             selectedDriver = e.target.value;
             updateUI();
-        });
+        };
     }
 
     function renderSummary() {
-        const view = selectedDriver === 'TODOS' ? allPackages : allPackages.filter(p => p.driver === selectedDriver);
+        const view = getFilteredPackages();
+
         let vol = 0, dev = 0, sem = 0;
 
         view.forEach(p => {
@@ -370,7 +485,7 @@
         });
 
         document.getElementById('summary-stats').innerHTML = `
-            <div class="stat-badge">Total: ${view.length}</div>
+            <div class="stat-badge">Total da Tela: ${view.length}</div>
             <div class="stat-badge stat-voltar">🔄 Voltar: ${vol}</div>
             <div class="stat-badge stat-devolver">📥 Receber Base: ${dev}</div>
             <div class="stat-badge stat-sem">⚠️ Sem Problem.: ${sem}</div>
@@ -378,15 +493,27 @@
     }
 
     function renderList() {
-        const view = selectedDriver === 'TODOS' ? allPackages : allPackages.filter(p => p.driver === selectedDriver);
+        const view = getFilteredPackages();
         const list = document.getElementById('package-list');
         list.innerHTML = '';
+
+        if (view.length === 0) {
+            list.innerHTML = `<div class="empty-state">🎉 Limpo! Não há peças nesta visualização.</div>`;
+            return;
+        }
 
         view.forEach(p => {
             const div = document.createElement('div');
             
-            const needsAttention = (p.category.id === 'sem' || p.category.id === 'voltar');
-            div.className = `pkg-item ${p.conferido ? 'conferido' : ''} ${needsAttention ? 'attention' : ''}`;
+            const isSemProblem = (p.category.id === 'sem');
+            
+            // Adiciona classes específicas se for conferido, devolvido ou se merecer destaque (sem problematica)
+            let extraClasses = '';
+            if (p.isDevolvido) extraClasses += ' devolvido';
+            else if (p.conferido) extraClasses += ' conferido';
+            else if (isSemProblem) extraClasses += ' highlight-sem';
+
+            div.className = `pkg-item ${extraClasses}`;
             div.id = `pkg-${p.id}`;
             
             const isWrongCity = !p.city.toLowerCase().includes('rio verde');
@@ -408,9 +535,10 @@
                 </div>
                 <div class="pkg-actions">
                     <span class="badge ${p.category.id}">${p.category.label}</span>
-                    <button class="btn-check" onclick="toggleConferido('${p.id}')">
-                        ${p.conferido ? '✅ Conferido' : 'Conferir'}
-                    </button>
+                    ${p.isDevolvido 
+                        ? `<span class="badge is-devolvido">📦 Já Devolvida</span>`
+                        : `<button class="btn-check" onclick="toggleConferido('${p.id}')">${p.conferido ? '✅ Conferido' : 'Conferir'}</button>`
+                    }
                 </div>
             `;
             list.appendChild(div);
@@ -428,22 +556,11 @@
             localStorage.removeItem(`rv_check_${id}`);
         }
         
-        const itemEl = document.getElementById(`pkg-${id}`);
-        const btn = itemEl.querySelector('.btn-check');
-        
-        if (pkg.conferido) {
-            itemEl.classList.add('conferido');
-            btn.innerHTML = '✅ Conferido';
-        } else {
-            itemEl.classList.remove('conferido');
-            btn.innerHTML = 'Conferir';
-        }
-
-        renderRanking();
+        updateUI();
     }
 
     document.getElementById('btn-copy-jms').addEventListener('click', () => {
-        const view = selectedDriver === 'TODOS' ? allPackages : allPackages.filter(p => p.driver === selectedDriver);
+        const view = getFilteredPackages();
         const ids = view.map(p => p.id).join(',');
         
         navigator.clipboard.writeText(ids).then(() => {
@@ -459,9 +576,12 @@
         let text = `🔛 PRESTAÇÃO RIO VERDE ${dateStr}\n`;
         
         const driverName = selectedDriver === 'TODOS' ? 'TODOS OS MOTORISTAS' : selectedDriver;
-        const view = selectedDriver === 'TODOS' ? allPackages : allPackages.filter(p => p.driver === selectedDriver);
+        const view = getFilteredPackages();
         
-        text += `Motorista: ${driverName} (${view.length} pacotes)\n\n`;
+        text += `Motorista: ${driverName} (${view.length} pacotes)\n`;
+        
+        const statusTextMap = { 'PENDENTES': '⏳ PENDENTES', 'CONFERIDAS': '✅ CONFERIDAS', 'DEVOLVIDAS': '📦 JÁ DEVOLVIDAS', 'TODAS': '📋 TODAS AS PEÇAS' };
+        text += `Status da Tela: ${statusTextMap[statusFilter]}\n\n`;
 
         const groups = {
             voltar: { title: '🔄 CONFERIR TENTATIVAS / VOLTAR NA ROTA', pkgs: [] },
@@ -479,8 +599,9 @@
                     const addrStr = p.address ? ` - ${p.address}` : '';
                     const reasonStr = p.reason ? `\n   ↳ Motivo: ${p.reason}` : '';
                     const cityAlert = !p.city.toLowerCase().includes('rio verde') ? ` 🚨 [ERRADO: ${p.city}]` : '';
+                    const devolvAlert = p.isDevolvido ? ` [📦 JÁ DEVOLVIDO]` : '';
                     
-                    text += `${p.id} - ${p.customer}${cityAlert}${addrStr}${reasonStr}\n`;
+                    text += `${p.id} - ${p.customer}${cityAlert}${devolvAlert}${addrStr}${reasonStr}\n`;
                 });
                 text += `\n`;
             }
